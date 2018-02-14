@@ -1,4 +1,4 @@
-@set @v=1 /*
+@set @v=2 /*
 @echo off &set "args=%1" &color 07 &title DOTA primary mm language override by AveYo v%@v:/*=%
 echo.
 echo      ---------------------------------------------------------------------
@@ -44,10 +44,10 @@ pushd "%STEAMDATA%\config" & copy /y localconfig.vdf localconfig.vdf.bak >nul
 cscript //E:JScript //nologo "%~f0"  Dota_LOptions "localconfig.vdf" "-language x,-textlanguage x,+cl_language x" -remove
 cscript //E:JScript //nologo "%~f0"  Dota_LOptions "localconfig.vdf" "%MOD_OPTIONS%" -add
 :done
-:: Restart Steam with fast options
-set l1=-silent -console -forceservice -windowed -nobigpicture -nointro -vrdisable -single_core -no-dwrite -tcp
-set l2=-inhibitbootstrap -nobootstrapperupdate -nodircheck -norepairfiles -noverifyfiles -nocrashmonitor -noassert
-start "Steam" "%STEAMPATH%\Steam.exe" %l1% %l2%
+:: [Optional] Restart Steam with fast options
+rem set l1=-silent -console -forceservice -windowed -nobigpicture -nointro -vrdisable -single_core -no-dwrite -tcp
+rem set l2=-inhibitbootstrap -nobootstrapperupdate -nodircheck -norepairfiles -noverifyfiles -nocrashmonitor -noassert
+rem start "Steam" "%STEAMPATH%\Steam.exe" %l1% %l2%
 :: Done!
 call :end Done
 exit/b
@@ -90,31 +90,42 @@ rem End of batch code */
 //----------------------------------------------------------------------------------------------------------------------------------
 // Utility JS functions - callable independently
 //----------------------------------------------------------------------------------------------------------------------------------
+//apps=getKeYpath(parsed,"UserLocalConfigStore/Software/Valve/Steam/Apps");
+function getKeYpath(obj,kp){
+  var test=kp.split("/");
+  var out=obj;
+  for (var i=0;i<test.length;i++) {
+    for (var KeY in out) {
+      if (out.hasOwnProperty(KeY) && (KeY+"").toLowerCase()==(test[i]+"").toLowerCase()) {out=out[KeY]; /*w.echo("found "+KeY);*/}
+    }
+  }
+  return out;
+}
 Dota_LOptions=function(fn, options, _flag){
   // fn:localconfig.vdf    options:separated by ,    _flag: -read=print -remove=delete -add=default if ommited
   var regs={}, lo=options.split(","), i=0,n=lo.length;
   for (i=0;i<n;i++){
-    regs[lo[i]]=new RegExp('(' + lo[i].split(" ")[0].replace(/([-+])/,"\\$1") + ((lo[i].indexOf(' ')==-1) ? ')' : ' [\\w%]+)'),'gi');
+    regs[lo[i]]=new RegExp('(' + lo[i].split(" ")[0].replace(/([-+])/,"\\$1")+((lo[i].indexOf(' ')==-1) ? ')' : ' [\\w%]+)'),'gi');
   }
   var flag=_flag || '-add', file=path.normalize(fn), data=fs.readFileSync(file, DEF_ENCODING);
-  var vdf=ValveDataFormat(), parsed=vdf.parse(data), steam=parsed.UserLocalConfigStore.Software.Valve.Steam;
-  var dota=(typeof steam.Apps == 'object') ? steam.Apps[vdf.nr('570')] : steam.apps[vdf.nr('570')];  // Gaben, please! why the caps?
-  if (flag == '-read'){ w.echo(dota.LaunchOptions); return; }                             // print existing launch options and exit
-  if (typeof dota.LaunchOptions === 'undefined' || dota.LaunchOptions === ''){
-    if (flag != '-remove') dota.LaunchOptions=lo.join(" ");                                    // no launch options defined, add all
+  var vdf=ValveDataFormat(), parsed=vdf.parse(data), apps=getKeYpath(parsed,"UserLocalConfigStore/Software/Valve/Steam/Apps");
+  var dota=apps[vdf.nr('570')];                              // added getKeYpath function to fix inconsistent key case used by Valve
+  if (flag == '-read'){ w.echo(dota["LaunchOptions"]); return; }                           // print existing launch options and exit
+  if (typeof dota["LaunchOptions"] === 'undefined' || dota["LaunchOptions"] === ''){
+    dota["LaunchOptions"]=(flag != '-remove') ? lo.join(" ") : "";                             // no launch options defined, add all
   } else {
     for (i=0;i<n;i++){
       if (lo[i] !== ''){
-        if (regs[lo[i]].test(dota.LaunchOptions)){
-          if (flag == '-remove') dota.LaunchOptions=dota.LaunchOptions.replace(regs[lo[i]], '');   // found existing, delete one by one
-          else dota.LaunchOptions=dota.LaunchOptions.replace(regs[lo[i]], lo[i]);                 // found existing, replace one by one
+        if (regs[lo[i]].test(dota["LaunchOptions"])){
+          if (flag == '-remove') dota["LaunchOptions"]=dota["LaunchOptions"].replace(regs[lo[i]], '');// found existing, delete 1by1
+          else dota["LaunchOptions"]=dota["LaunchOptions"].replace(regs[lo[i]], lo[i]);              // found existing, replace 1by1
         } else {
-          if (flag != '-remove') dota.LaunchOptions+=' '+lo[i];                                   // not found existing, add one by one
+          if (flag != '-remove') dota["LaunchOptions"]+=' '+lo[i];                                   // not found existing, add 1by1
         }
       }
     }
   }
-  dota.LaunchOptions=dota.LaunchOptions.replace(/\s\s+/g, ' ');                           // replace multiple spaces between options
+  dota["LaunchOptions"]=dota["LaunchOptions"].replace(/\s\s+/g, ' ');                     // replace multiple spaces between options
   fs.writeFileSync(fn, vdf.stringify(parsed,true), DEF_ENCODING);                    // update fn if flag is -add -remove or ommited
 };
 WriteLocal=function(fn,s){ fs.writeFileSync(fn, s.replace(/>/g,"\r\n").replace(/\'/g,"\""), "unicode"); };
@@ -138,20 +149,20 @@ function ValveDataFormat(){
       while ((m=regex.exec(txt)) !== null){
         //lf='\n'; w.echo(' cmnt:'+m[1]+lf+' key:'+m[2]+lf+' val:'+m[3]+lf+' add:'+m[4]+lf+' open:'+m[5]+lf+' close:'+m[6]+lf);
         if (comments && m[1] !== empty){
-          i++;key='\x10'+i; stack[stack.length-1][key]=m[1];                                        // AveYo: optionally save comments
+          i++;key='\x10'+i; stack[stack.length-1][key]=m[1];                                      // AveYo: optionally save comments
         } else if (m[4] !== empty){
           key=m[4]; if (expect_bracket){ w.echo('VDF.parse: invalid bracket near '+m[0]); return this.stringify(obj,true); }
           if (order && key == ''+~~key){key='\x11'+key;}              // AveYo: prepend nr. keys with \x11 to keep order in node.js
           if (typeof stack[stack.length-1][key] === 'undefined'){
             stack[stack.length-1][key]={};
           } else {
-            i++;key+= '\x12'+i; stack[stack.length-1][key]={}; dups=true;               // AveYo: rename duplicate key obj with \x12+i
+            i++;key+= '\x12'+i; stack[stack.length-1][key]={}; dups=true;             // AveYo: rename duplicate key obj with \x12+i
           }
           stack.push(stack[stack.length-1][key]); expect_bracket=true;
         } else if (m[2] !== empty){
           key=m[2]; if (expect_bracket){ w.echo('VDF.parse: invalid bracket near '+m[0]); return this.stringify(obj,true); }
           if (order && key == ''+~~key) key='\x11'+key;                // AveYo: prepend nr. keys with \x11 to keep order in node.js
-          if (typeof stack[stack.length-1][key] !== 'undefined'){ i++;key+= '\x12'+i; dups=true; } // AveYo: rename duplicate k-v pair
+          if (typeof stack[stack.length-1][key] !== 'undefined'){ i++;key+= '\x12'+i; dups=true; }//AveYo: rename duplicate k-v pair
           stack[stack.length-1][key]=m[3]||'';
         } else if (m[5] !== empty){
           expect_bracket=false; continue; // one level deeper
