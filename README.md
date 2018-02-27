@@ -1,18 +1,18 @@
 # DOTA 2 RESOURCES BY AVEYO
 
-### No-Bling - "GlanceValue" restoration mod v2 (readme inside) - now includes performance Tweaks and more polished manual filters!  
+### No-Bling - "GlanceValue" restoration mod v2 - with more performance Tweaks and polished manual filters!  
 https://github.com/No-Bling/DOTA  
 
-### Potato PC user.cfg
-https://pastebin.com/k6hHxu45
+### Potato PC user.cfg - featuring my special camera hotkeys (Cam Center, Sticky Follow+, Sticky Follow- etc.)
+https://pastebin.com/k6hHxu45 - subset of below autoexec.cfg reference
+
+### All Dota 2 GUI Settings - autoexec.cfg reference featuring video tweaks, low spew, sys info, behavior score print
+http://pastebin.com/ZNSDA8hw - and the supporting thread on dev forums: http://dev.dota2.com/showthread.php?t=194985
 
 ### Benchmark.cfg (no external tools needed, uses built-in Source 2 reporting)
 http://pastebin.com/MdqSLBSv use with MatchID 2844309781 replay  
 [As .zip including replay file](https://github.com/AveYo/D-OPTIMIZER/releases/download/3.0/Dota_2_benchmark.zip)  
 This probably needs refactoring, use the [light version](https://github.com/AveYo/D-OPTIMIZER/releases/tag/3.0l) in the mean time
-
-### All Dota 2 GUI Settings - autoexec.cfg reference (featuring tweaked video quality presets)
-http://pastebin.com/ZNSDA8hw - and the supporting thread on dev forums: http://dev.dota2.com/showthread.php?t=194985
 
 ### Launch options
 http://pastebin.com/CZqEP5Qr
