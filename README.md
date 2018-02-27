@@ -1,24 +1,25 @@
 # DOTA 2 RESOURCES BY AVEYO
 
-### No-Bling - "GlanceValue" restoration mod (readme inside)
-https://github.com/No-Bling/DOTA
+### No-Bling - "GlanceValue" restoration mod v2 (readme inside) - now includes performance Tweaks and more polished manual filters!  
+https://github.com/No-Bling/DOTA  
 
 ### Potato PC user.cfg
 https://pastebin.com/k6hHxu45
 
 ### Benchmark.cfg (no external tools needed, uses built-in Source 2 reporting)
-http://pastebin.com/MdqSLBSv use with MatchID 2844309781 replay
-
-[As .zip including replay file](https://github.com/AveYo/D-OPTIMIZER/releases/download/3.0/Dota_2_benchmark.zip)
+http://pastebin.com/MdqSLBSv use with MatchID 2844309781 replay  
+[As .zip including replay file](https://github.com/AveYo/D-OPTIMIZER/releases/download/3.0/Dota_2_benchmark.zip)  
+This probably needs refactoring, use the [light version](https://github.com/AveYo/D-OPTIMIZER/releases/tag/3.0l) in the mean time
 
 ### All Dota 2 GUI Settings - autoexec.cfg reference (featuring tweaked video quality presets)
-http://pastebin.com/ZNSDA8hw
+http://pastebin.com/ZNSDA8hw - and the supporting thread on dev forums: http://dev.dota2.com/showthread.php?t=194985
 
 ### Launch options
 http://pastebin.com/CZqEP5Qr
 
 ### Cvars (console commands) sorted by category (work in progress)
-https://github.com/AveYo/D-OPTIMIZER/blob/master/Dota2%20cvars.xls
+https://github.com/AveYo/D-OPTIMIZER/blob/master/dota_cvarlist.txt - newer, text-friendly
+https://github.com/AveYo/D-OPTIMIZER/blob/master/Dota2%20cvars.xls  
 
 ### Useful batch files
 
@@ -26,7 +27,7 @@ https://pastebin.com/WNEsDzdS - steam_dota_fix.bat (nuke local Steam and DOTA co
 
 http://pastebin.com/kzkDrDN3 - reset_Dota2.bat (both local cfg and remote cloud settings)
 
-http://pastebin.com/GMyD7UwK - list_my_programs.bat (use it for dev.dota bug reports)
+http://pastebin.com/GMyD7UwK - list_my_programs.bat v2 (use it for dev.dota bug reports)
 
 https://pastebin.com/bhQrywES - GetLaunchOptions.bat (rightclick - SendTo - GetLaunchOptions any game folder)
 
