@@ -1,48 +1,81 @@
-@set @v=2 /*
-@echo off &set "args=%1" &color 07 &title DOTA primary mm language override by AveYo v%@v:/*=%
+@set @v=3 /*
+@echo off &set "arg1=%1" &set "arg2=%2" &color 07 &title DOTA primary mm language override by AveYo v%@v:/*=%
 echo.
 echo      ---------------------------------------------------------------------
-echo     :     DOTA primary mm language override while keeping English UI     :
+echo     :     DOTA primary MM language override with distinct UI language     :
 echo     :---------------------------------------------------------------------:
+echo     : Can have Steam in German, Dota in Russian and MM queue for SChinese :
 echo     :                                                                     :
 echo     : WARNING! Steam must be closed so that launch options could be added :
 echo      ---------------------------------------------------------------------
+timeout /t 10
 echo.
-:: Adjust default mm language override below:
-if not defined args set "mm_language=Russian"
-echo Will override primary mm language with: %mm_language%
-set/p "mm_override=Enter new choice, or press Enter to use %mm_language%: "
-echo.
-if defined mm_override set "mm_language=%mm_override%"
-for /f "delims=" %%a in ('cscript //E:JScript //nologo "%~f0" LangCase %mm_language%') do set "mm_LangCase=%%a"
-for /f "delims=" %%a in ('cscript //E:JScript //nologo "%~f0" LOCase %mm_language%') do set "mm_LOCase=%%a"
+:: Detect default steam language to use as UI suggestion
+call :reg_query "HKCU\SOFTWARE\Valve\Steam" "Language" steam_language
+if defined steam_language set "ui_language=%STEAM_LANGUAGE%"
+if not defined ui_language set "ui_language=english"
+:: Change default MM suggestion below:
+set "mm_language=schinese"
+:: Allow overriding both via command line arguments
+if defined arg1 set "mm_language=%~1"
+if defined arg2 set "ui_language=%~2"
+:: Set available languages
 set "lang=brazilian bulgarian czech danish dutch english finnish french german greek hungarian italian japanese korean koreana"
 set "lang=%lang% norwegian polish portuguese romanian russian schinese spanish swedish tchinese thai turkish ukrainian"
-set "lang_found="
-for %%s in (%lang%) do if /i "%%s"=="%mm_LOCase%" set "lang_found=y"
-if not defined lang_found call :end ! Can't use '%mm_override%' language
-if /i "%mm_LOCase%"=="english" call :end ! You silly bear, English is already the primary mm language..
-:: Kill Steam and child processes
+set "mm_override=" & set "ui_override=" & set "mm_lang_found=" & set "ui_lang_found="
+:: Prompt and process MM language choice
+if not defined arg1 echo Will override primary MM language with: %mm_language%
+if not defined arg1 set/p "mm_override=Enter new choice, or press Enter to use %mm_language%: "
+if defined mm_override set "mm_language=%mm_override%"
+for /f "delims=" %%a in ('cscript //E:JScript //nologo "%~f0" LOCase %mm_language%') do set "mm_language=%%a"
+for %%s in (%lang%) do if /i "%%s"=="%mm_language%" set "mm_lang_found=y"
+if not defined mm_lang_found call :end ! Can't use '%mm_override%' MM language
+if /i "%mm_language%"=="english" ( set "primary=English" ) else set "primary=%mm_language%"
+echo.
+:: Prompt and process UI language choice
+if not defined arg2 echo Will override UI language with: %ui_language%
+if not defined arg2 set/p "ui_override=Enter new choice, or press Enter to use %ui_language%: "
+if defined ui_override set "ui_language=%ui_override%"
+for /f "delims=" %%a in ('cscript //E:JScript //nologo "%~f0" LOCase %ui_language%') do set "ui_language=%%a"
+for %%s in (%lang%) do if /i "%%s"=="%ui_language%" set "ui_lang_found=y"
+if not defined ui_lang_found call :end ! Can't use '%ui_override%' UI language
+if /i "%ui_language%"=="english" ( set "secondary=English" ) else set "secondary=%ui_language%"
+echo.
+:: Set mod directory and launch options
+set "mod_language=%ui_language%"
+set "mod_options=-language %ui_language%,-textlanguage %mm_language%,+cl_language %ui_language%"
+if /i "%ui_language%"=="english" set "mod_language=english%%"
+if /i "%ui_language%"=="english" set "mod_options=-language english%%,-textlanguage %mm_language%,+cl_language english"
+:: Kill Dota and Steam
+taskkill /im dota2.exe /t /f >nul 2>nul 
 taskkill /im Steam.exe /t /f >nul 2>nul & timeout /t 1 >nul & del /f /q "%STEAMPATH%\.crash" >nul 2>nul & timeout /t 1 >nul
-:: Generate blank Tokens localization files so that it will fallback to English
-echo Adding required localization redirection for: %mm_LangCase%
+echo Adding localization redirection for MM: %mm_language% and UI: %ui_language% &rem stun bars still remain in primary mm language
 call :set_steam
 call :set_dota
-echo Path: %DOTA%\dota_english%%\resource
-mkdir "%DOTA%\dota_english%%\resource" >nul 2>nul
-pushd "%DOTA%\dota_english%%\resource"
-set "localtext='lang'>{>'Language' '%mm_LangCase%'>'Tokens'>{>}>}>"
-cscript //E:JScript //nologo "%~f0" WriteLocal "template" "%localtext%"
-set "lang=%lang:english=%"
-set "files=items dota gameui chat broadcastfacts valve vgui"
-for %%a in (%lang%) do for %%B in (%files%) do copy /y template %%B_%%a.txt >nul 2>nul
-:: Add launch options to change mm language but keep user interface in English
-set "MOD_OPTIONS=-language english%%,-textlanguage %mm_LOCase%,+cl_language english"
-echo Launch options: %MOD_OPTIONS:,= %
+set "panorama_src=%DOTA%\dota\panorama\localization"
+set "panorama_dst=%DOTA%\dota_%mod_language%\panorama\localization"
+set "core_resource_src=%DOTA%\core\resource"
+set "resource_src=%DOTA%\dota\resource"
+set "resource_dst=%DOTA%\dota_%mod_language%\resource"
+:: Process Panorama localization
+echo Creating "dota_%mm_language%.txt" in %panorama_dst%
+( del /f/s/q "%panorama_dst%" & rmdir /s/q "%panorama_dst%" & mkdir "%panorama_dst%" ) >nul 2>nul
+copy /y "%panorama_src%\dota_%ui_language%.txt" "%panorama_dst%\dota_%mm_language%.txt" >nul 2>nul
+:: Process Resource localization
+( del /f/s/q "%resource_dst%" & rmdir /s/q "%resource_dst%" & mkdir "%resource_dst%" ) >nul 2>nul
+set "files_dota=items dota gameui chat broadcastfacts hero_chat_wheel"
+for %%B in (%files_dota%) do copy /y "%resource_src%\%%B_%ui_language%.txt" "%resource_dst%\%%B_%mm_language%.txt" >nul 2>nul
+set "files_core=valve vgui keybindings"
+for %%B in (%files_core%) do copy /y "%core_resource_src%\%%B_%ui_language%.txt" "%resource_dst%\%%B_%mm_language%.txt" >nul 2>nul
+:: Adjust "Language" "English" in Resource localization files
+pushd "%resource_dst%"
+cscript //E:JScript //nologo "%~f0" Dota_ResValue "Language" "%primary%" 
+:: Add launch options to change mm language but keep user interface in selected ui language (english by default)
+echo Adding launch options: %mod_options:,= %
 if not defined STEAMDATA echo ERROR! User profile not found, cannot add options & goto :done
 pushd "%STEAMDATA%\config" & copy /y localconfig.vdf localconfig.vdf.bak >nul
 cscript //E:JScript //nologo "%~f0"  Dota_LOptions "localconfig.vdf" "-language x,-textlanguage x,+cl_language x" -remove
-cscript //E:JScript //nologo "%~f0"  Dota_LOptions "localconfig.vdf" "%MOD_OPTIONS%" -add
+cscript //E:JScript //nologo "%~f0"  Dota_LOptions "localconfig.vdf" "%mod_options%" -add
 :done
 :: [Optional] Restart Steam with fast options
 rem set l1=-silent -console -forceservice -windowed -nobigpicture -nointro -vrdisable -single_core -no-dwrite -tcp
@@ -128,8 +161,20 @@ Dota_LOptions=function(fn, options, _flag){
   dota["LaunchOptions"]=dota["LaunchOptions"].replace(/\s\s+/g, ' ');                     // replace multiple spaces between options
   fs.writeFileSync(fn, vdf.stringify(parsed,true), DEF_ENCODING);                    // update fn if flag is -add -remove or ommited
 };
+Dota_ResValue=function(file, res, value){
+  var data='', magic='\"lang\"', fpath=fso.GetFolder(fso.GetAbsolutePathName("."));
+  var find_res=new RegExp('^([ \t]*\"'+res+'\"[ \t]+\")(.*)(\"[ \t]*$[\n\r]+)','gmi');
+  WSH.Echo('Patching "'+res+'" to "'+value+'" in '+fpath);
+  var files=new Enumerator(fpath.Files); files.moveFirst();  
+  while (!files.atEnd()) {
+  	var fn=files.item().name; WSH.Stdout.Write('.'); //WSH.Echo(fn); // get file names and write ... progress
+    data=fs.readFileSync(fn, 'utf-16'); // read resource file
+		data=data.replace(find_res,'$1'+value+'$3'); // mod res with value
+    fs.writeFileSync(fn, data, 'utf-16'); files.moveNext(); // save file and load another
+	}
+  WSH.Echo(' Done!');
+}
 WriteLocal=function(fn,s){ fs.writeFileSync(fn, s.replace(/>/g,"\r\n").replace(/\'/g,"\""), "unicode"); };
-LangCase=function(s){ w.echo(s.toLowerCase().replace(/\b\S/g, function(t){return t.toUpperCase();})); };
 LOCase=function(s){ w.echo(s.toLowerCase()); };
 
 //----------------------------------------------------------------------------------------------------------------------------------
